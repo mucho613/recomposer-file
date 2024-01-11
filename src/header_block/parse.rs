@@ -79,16 +79,3 @@ fn parse_file_header(file: &[u8]) -> IResult<&[u8], HeaderBlock, Error<&[u8]>> {
         },
     ))
 }
-
-// #[test]
-// fn parse_file_header() {
-//     let input = "RCM-PC98V2.0(C)COME ON MUSIC\r\n\0\0Trailing bytes".as_bytes();
-
-//     assert_eq!(
-//         take_version(input),
-//         Ok((
-//             "Trailing bytes".as_bytes(),
-//             "RCM-PC98V2.0(C)COME ON MUSIC\r\n\0\0".as_bytes(),
-//         ))
-//     );
-// }

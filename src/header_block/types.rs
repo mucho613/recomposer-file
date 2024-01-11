@@ -39,22 +39,3 @@ pub struct RhythmNote {
 pub struct UserExclusive {
     pub message: [u8; 48],
 }
-
-#[derive(Debug)]
-pub struct TrackHeader {
-    size: u16,
-    channel: u8,
-    key: u8,
-    step: u8,
-    mode: u8,
-    comment: u8,
-    data: Vec<u8>,
-}
-
-#[derive(Debug)]
-pub struct TrackEvent {
-    event_type: u8,
-    step_time: u8,
-    gate_time: u8,
-    velocity: u8,
-}
