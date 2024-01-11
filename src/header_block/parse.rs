@@ -2,20 +2,9 @@ use nom::{bytes::complete::take, error::Error, IResult};
 
 use crate::header_block::types::UserExclusive;
 
-use super::types::{HeaderBlock, RcpFile, RhythmNote, TimeSignature};
+use super::types::{HeaderBlock, RhythmNote, TimeSignature};
 
-pub fn load(file: &[u8]) -> Result<RcpFile, String> {
-    let (_, header_block) = match parse_file_header(file) {
-        Ok(file_header) => file_header,
-        Err(_) => return Err("Error parsing file header".to_string()),
-    };
-
-    Ok(RcpFile {
-        header: header_block,
-    })
-}
-
-fn parse_file_header(file: &[u8]) -> IResult<&[u8], HeaderBlock, Error<&[u8]>> {
+pub fn parse_header_block(file: &[u8]) -> IResult<&[u8], HeaderBlock, Error<&[u8]>> {
     let (file, version) = take(32usize)(file)?;
     let (file, title) = take(64usize)(file)?;
     let (file, memo) = take(336usize)(file)?;
@@ -79,16 +68,3 @@ fn parse_file_header(file: &[u8]) -> IResult<&[u8], HeaderBlock, Error<&[u8]>> {
         },
     ))
 }
-
-// #[test]
-// fn parse_file_header() {
-//     let input = "RCM-PC98V2.0(C)COME ON MUSIC\r\n\0\0Trailing bytes".as_bytes();
-
-//     assert_eq!(
-//         take_version(input),
-//         Ok((
-//             "Trailing bytes".as_bytes(),
-//             "RCM-PC98V2.0(C)COME ON MUSIC\r\n\0\0".as_bytes(),
-//         ))
-//     );
-// }
