@@ -1,3 +1,6 @@
+use std::vec;
+
+use encoding_rs::SHIFT_JIS;
 use nom::{
     bytes::complete::take,
     error::Error,
@@ -54,7 +57,7 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0x00..=0x7F => TrackEvent::Note(byte_0, byte_1, byte_2),
 
         0x90 => TrackEvent::UserExclusive(byte_0),
-        0x98 => TrackEvent::TrackExclusive(byte_0, byte_1),
+        0x98 => TrackEvent::TrackExclusiveStart(byte_1, byte_2),
 
         0xDD => TrackEvent::RolBase(byte_0, byte_1, byte_2),
         0xDE => TrackEvent::RolPara(byte_0, byte_1, byte_2),
@@ -71,8 +74,7 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0xEE => TrackEvent::PitchBend((byte_1 as i16) << 7 | byte_0 as i16),
 
         0xF5 => TrackEvent::Key(byte_0),
-        0xF6 => TrackEvent::Comment(byte_0, byte_1),
-        0xF7 => TrackEvent::ContinuesData(byte_0, byte_1),
+        0xF6 => TrackEvent::CommentStart(byte_0, byte_1),
         0xF8 => TrackEvent::RepeatEnd(byte_0),
         0xF9 => TrackEvent::RepeatStart,
         0xFC => TrackEvent::SameMeasure,

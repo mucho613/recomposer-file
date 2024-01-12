@@ -1,3 +1,5 @@
+use std::vec;
+
 #[derive(Debug)]
 pub struct TrackBlock {
     pub tracks: Vec<Track>,
@@ -31,7 +33,8 @@ pub struct TrackHeader {
 pub enum TrackEvent {
     Note(StepTime, GateTime, Velocity),
     UserExclusive(StepTime),
-    TrackExclusive(u8, u8),
+    TrackExclusive(Vec<u8>),
+    TrackExclusiveStart(u8, u8),
     RolBase(StepTime, GateTime, Velocity),
     RolPara(StepTime, GateTime, Velocity),
     RolDev(StepTime, GateTime, Velocity),
@@ -45,7 +48,8 @@ pub enum TrackEvent {
     PolyphonicAfterTouch(StepTime, KeyNumber, Pressure),
     PitchBend(i16),
     Key(u8),
-    Comment(u8, u8),
+    Comment(Vec<u8>),
+    CommentStart(u8, u8),
     ContinuesData(u8, u8),
     RepeatEnd(RepeatCount),
     RepeatStart,
