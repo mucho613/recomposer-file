@@ -1,8 +1,8 @@
 use header_block::types::HeaderBlock;
 use track_block::types::TrackBlock;
 
-mod header_block;
-mod track_block;
+pub mod header_block;
+pub mod track_block;
 
 #[derive(Debug)]
 pub struct RcpFile {
