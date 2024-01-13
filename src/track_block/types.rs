@@ -29,7 +29,7 @@ pub struct TrackHeader {
 
 #[derive(Debug)]
 pub enum TrackEvent {
-    Note(StepTime, GateTime, Velocity),
+    Note(KeyNumber, StepTime, GateTime, Velocity),
     UserExclusive(StepTime),
     TrackExclusive(Vec<u8>),
     TrackExclusiveStart(u8, u8),

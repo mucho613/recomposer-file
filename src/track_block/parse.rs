@@ -53,7 +53,7 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
     let (i, byte_2) = be_u8(i)?;
 
     let track_event = match event_type {
-        0x00..=0x7F => TrackEvent::Note(byte_0, byte_1, byte_2),
+        0x00..=0x7F => TrackEvent::Note(event_type, byte_0, byte_1, byte_2),
 
         0x90 => TrackEvent::UserExclusive(byte_0),
         0x98 => TrackEvent::TrackExclusiveStart(byte_1, byte_2),
