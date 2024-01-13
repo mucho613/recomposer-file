@@ -118,33 +118,24 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
             .into_iter()
             .fold(vec![], |mut acc, track_event| match track_event {
                 TrackEvent::CommentStart(byte_0, byte_1) => {
-                    // println!("CommentStart {} {}", byte_0, byte_1);
-
                     buffer_type = Some(BufferType::Comment);
                     buffer.clear();
 
                     buffer.push(byte_0);
                     buffer.push(byte_1);
-                    counter += 1;
                     acc
                 }
                 TrackEvent::TrackExclusiveStart(byte_0, byte_1) => {
-                    // println!("TrackExclusiveStart {} {}", byte_0, byte_1);
-
                     buffer_type = Some(BufferType::TrackExclusive);
                     buffer.clear();
 
                     buffer.push(byte_0);
                     buffer.push(byte_1);
-                    counter += 1;
                     acc
                 }
                 TrackEvent::ContinuesData(byte_0, byte_1) => {
-                    // println!("ContinuesData {} {}", byte_0, byte_1);
-
                     buffer.push(byte_0);
                     buffer.push(byte_1);
-                    counter += 1;
                     acc
                 }
                 _ => {
@@ -161,8 +152,6 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
                                 None => return acc,
                             };
                             buffer.truncate(position + 1);
-
-                            println!("{:02X?}", buffer);
 
                             acc.push(TrackEvent::TrackExclusive(buffer.clone()));
                         }
