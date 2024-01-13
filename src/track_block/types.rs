@@ -1,27 +1,38 @@
 #[derive(Debug)]
+pub struct TrackBlock {
+    pub tracks: Vec<Track>,
+}
+
+#[derive(Debug)]
+pub struct Track {
+    pub track_header: TrackHeader,
+    pub track_events: Vec<TrackEvent>,
+}
+
+#[derive(Debug)]
+pub enum TrackType {
+    Normal,
+    Rhythm,
+}
+
+#[derive(Debug)]
 pub struct TrackHeader {
-    size: u16,
-    channel: u8,
-    key: u8,
-    step: u8,
-    mode: u8,
-    comment: u8,
-    data: Vec<u8>,
+    pub size: u16,
+    pub track_number: u8,
+    pub track_type: TrackType,
+    pub channel: u8,
+    pub key_bias: u8,
+    pub step_bias: u8,
+    pub muting: bool,
+    pub comment: [u8; 36],
 }
 
 #[derive(Debug)]
-pub struct TrackEvent {
-    event_type: u8,
-    step_time: u8,
-    gate_time: u8,
-    velocity: u8,
-}
-
-#[derive(Debug)]
-enum TrackEvent {
+pub enum TrackEvent {
     Note(StepTime, GateTime, Velocity),
     UserExclusive(StepTime),
     TrackExclusive(Vec<u8>),
+    TrackExclusiveStart(u8, u8),
     RolBase(StepTime, GateTime, Velocity),
     RolPara(StepTime, GateTime, Velocity),
     RolDev(StepTime, GateTime, Velocity),
@@ -36,6 +47,8 @@ enum TrackEvent {
     PitchBend(i16),
     Key(u8),
     Comment(Vec<u8>),
+    CommentStart(u8, u8),
+    ContinuesData(u8, u8),
     RepeatEnd(RepeatCount),
     RepeatStart,
     SameMeasure,

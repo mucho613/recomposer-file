@@ -1,9 +1,4 @@
 #[derive(Debug)]
-pub struct RcpFile {
-    pub header: HeaderBlock,
-}
-
-#[derive(Debug)]
 pub struct HeaderBlock {
     pub version: [u8; 32],
     pub title: [u8; 64],
