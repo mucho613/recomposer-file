@@ -74,7 +74,8 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0xEE => TrackEvent::PitchBend((byte_1 as i16) << 7 | byte_0 as i16),
 
         0xF5 => TrackEvent::Key(byte_0),
-        0xF6 => TrackEvent::CommentStart(byte_0, byte_1),
+        0xF6 => TrackEvent::CommentStart(byte_1, byte_2),
+        0xF7 => TrackEvent::ContinuesData(byte_1, byte_2),
         0xF8 => TrackEvent::RepeatEnd(byte_0),
         0xF9 => TrackEvent::RepeatStart,
         0xFC => TrackEvent::SameMeasure,
@@ -102,6 +103,36 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
 
         track_events.push(event);
     }
+
+    let mut buffer: Vec<u8> = vec![];
+
+    // CommentStart または TrackExclusiveStart が見つかったら、バッファにそれ以降の ContinuesData を貯めて、
+    // 1つの Comment または TrackExclusive にマージする
+    track_events =
+        track_events
+            .into_iter()
+            .fold(vec![], |mut acc, track_event| match track_event {
+                TrackEvent::CommentStart(byte_0, byte_1) => {
+                    println!("CommentStart {} {}", byte_0, byte_1);
+                    buffer.push(byte_0);
+                    buffer.push(byte_1);
+                    acc
+                }
+                TrackEvent::TrackExclusiveStart(byte_0, byte_1) => {
+                    println!("TrackExclusiveStart {} {}", byte_0, byte_1);
+                    buffer.push()
+                    acc
+                }
+                TrackEvent::ContinuesData(byte_0, byte_1) => {
+                    println!("ContinuesData {} {}", byte_0, byte_1);
+                    acc.push(track_event);
+                    acc
+                }
+                _ => {
+                    acc.push(track_event);
+                    acc
+                }
+            });
 
     Ok((
         i,
