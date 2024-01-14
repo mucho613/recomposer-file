@@ -30,9 +30,9 @@ pub struct TrackHeader {
 #[derive(Debug)]
 pub enum TrackEvent {
     Note(KeyNumber, StepTime, GateTime, Velocity),
-    UserExclusive(StepTime),
-    TrackExclusive(Vec<u8>),
-    TrackExclusiveStart(u8, u8),
+    UserExclusive(StepTime, u8),
+    TrackExclusive(StepTime, Vec<u8>),
+    TrackExclusiveStart(StepTime, u8, u8),
     RolBase(StepTime, GateTime, Velocity),
     RolPara(StepTime, GateTime, Velocity),
     RolDev(StepTime, GateTime, Velocity),
@@ -44,7 +44,7 @@ pub enum TrackEvent {
     Control(StepTime, u8, u8),
     ProgramChange(StepTime, u8),
     PolyphonicAfterTouch(StepTime, KeyNumber, Pressure),
-    PitchBend(i16),
+    PitchBend(StepTime, i16),
     Key(u8),
     Comment(Vec<u8>),
     CommentStart(u8, u8),

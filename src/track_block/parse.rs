@@ -55,8 +55,8 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
     let track_event = match event_type {
         0x00..=0x7F => TrackEvent::Note(event_type, byte_0, byte_1, byte_2),
 
-        0x90 => TrackEvent::UserExclusive(byte_0),
-        0x98 => TrackEvent::TrackExclusiveStart(byte_1, byte_2),
+        0x90..=0x97 => TrackEvent::UserExclusive(event_type & 0x0F, byte_0),
+        0x98 => TrackEvent::TrackExclusiveStart(byte_0, byte_1, byte_2),
 
         0xDD => TrackEvent::RolBase(byte_0, byte_1, byte_2),
         0xDE => TrackEvent::RolPara(byte_0, byte_1, byte_2),
@@ -70,7 +70,7 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0xEB => TrackEvent::Control(byte_0, byte_1, byte_2),
         0xEC => TrackEvent::ProgramChange(byte_0, byte_1),
         0xED => TrackEvent::PolyphonicAfterTouch(byte_0, byte_1, byte_2),
-        0xEE => TrackEvent::PitchBend((byte_1 as i16) << 7 | byte_0 as i16),
+        0xEE => TrackEvent::PitchBend(byte_0, (byte_2 as i16) << 7 | byte_1 as i16),
 
         0xF5 => TrackEvent::Key(byte_0),
         0xF6 => TrackEvent::CommentStart(byte_1, byte_2),
@@ -108,7 +108,7 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
         TrackExclusive,
     }
     let mut buffer_type: Option<BufferType> = None;
-    let mut counter: usize = 0;
+    let mut step_time: Option<u8> = None;
     let mut buffer: Vec<u8> = vec![];
 
     // CommentStart または TrackExclusiveStart が見つかったら、バッファにそれ以降の ContinuesData を貯めて、
@@ -125,12 +125,13 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
                     buffer.push(byte_1);
                     acc
                 }
-                TrackEvent::TrackExclusiveStart(byte_0, byte_1) => {
+                TrackEvent::TrackExclusiveStart(byte_0, byte_1, byte_2) => {
                     buffer_type = Some(BufferType::TrackExclusive);
                     buffer.clear();
 
-                    buffer.push(byte_0);
+                    step_time = Some(byte_0);
                     buffer.push(byte_1);
+                    buffer.push(byte_2);
                     acc
                 }
                 TrackEvent::ContinuesData(byte_0, byte_1) => {
@@ -153,7 +154,12 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
                             };
                             buffer.truncate(position + 1);
 
-                            acc.push(TrackEvent::TrackExclusive(buffer.clone()));
+                            let step_time = step_time.take();
+
+                            acc.push(TrackEvent::TrackExclusive(
+                                step_time.unwrap(),
+                                buffer.clone(),
+                            ));
                         }
                         None => {
                             acc.push(track_event);
