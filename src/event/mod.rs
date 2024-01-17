@@ -1,3 +1,5 @@
+mod parse;
+
 #[derive(Debug)]
 pub enum TrackEvent {
     Note {
