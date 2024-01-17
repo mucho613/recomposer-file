@@ -55,7 +55,7 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
     let track_event = match event_type {
         0x00..=0x7F => TrackEvent::Note(event_type, byte_0, byte_1, byte_2),
 
-        0x90..=0x97 => TrackEvent::UserExclusive(event_type & 0x0F, byte_0),
+        0x90..=0x97 => TrackEvent::UserExclusive(byte_0, event_type & 0x0F),
 
         0xDD => TrackEvent::RolBase(byte_0, byte_1, byte_2),
         0xDE => TrackEvent::RolPara(byte_0, byte_1, byte_2),
