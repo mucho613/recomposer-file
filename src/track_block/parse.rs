@@ -46,7 +46,7 @@ fn parse_track_header(i: &[u8]) -> IResult<&[u8], TrackHeader, Error<&[u8]>> {
     ))
 }
 
-pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
+fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
     let (i, event_type) = be_u8(i)?;
     let (i, byte_0) = be_u8(i)?;
     let (i, byte_1) = be_u8(i)?;
@@ -56,7 +56,6 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0x00..=0x7F => TrackEvent::Note(event_type, byte_0, byte_1, byte_2),
 
         0x90..=0x97 => TrackEvent::UserExclusive(event_type & 0x0F, byte_0),
-        0x98 => TrackEvent::TrackExclusiveStart(byte_0, byte_1, byte_2),
 
         0xDD => TrackEvent::RolBase(byte_0, byte_1, byte_2),
         0xDE => TrackEvent::RolPara(byte_0, byte_1, byte_2),
@@ -73,8 +72,6 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0xEE => TrackEvent::PitchBend(byte_0, (byte_2 as i16) << 7 | byte_1 as i16),
 
         0xF5 => TrackEvent::Key(byte_0),
-        0xF6 => TrackEvent::CommentStart(byte_1, byte_2),
-        0xF7 => TrackEvent::ContinuesData(byte_1, byte_2),
         0xF8 => TrackEvent::RepeatEnd(byte_0),
         0xF9 => TrackEvent::RepeatStart,
         0xFC => TrackEvent::SameMeasure,
@@ -82,6 +79,90 @@ pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
         0xFE => TrackEvent::EndOfTrack,
 
         _ => panic!("Unknown track event type"),
+    };
+
+    Ok((i, track_event))
+}
+
+fn take_track_exclusive_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
+    let (i, event_type) = be_u8(i)?;
+    let (i, step_time) = be_u8(i)?;
+    let (i, byte_2) = be_u8(i)?;
+    let (i, byte_3) = be_u8(i)?;
+    if event_type != 0x98 {
+        panic!("Not track exclusive event");
+    }
+
+    let mut buffer = vec![];
+
+    buffer.push(byte_2);
+    buffer.push(byte_3);
+
+    let mut i2 = i;
+
+    loop {
+        let (i, _) = be_u8(i2)?;
+        let (i, _) = be_u8(i)?;
+        let (i, byte_2) = be_u8(i)?;
+        let (i, byte_3) = be_u8(i)?;
+
+        i2 = i;
+
+        buffer.push(byte_2);
+        buffer.push(byte_3);
+
+        if byte_3 == 0xF7 {
+            break;
+        }
+    }
+
+    Ok((i2, TrackEvent::TrackExclusive(step_time, buffer)))
+}
+
+fn take_comment_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
+    let (i, event_type) = be_u8(i)?;
+    let (i, _) = be_u8(i)?;
+    let (i, byte_2) = be_u8(i)?;
+    let (i, byte_3) = be_u8(i)?;
+    if event_type != 0xF6 {
+        panic!("Not comment event");
+    }
+
+    let mut buffer = vec![];
+
+    buffer.push(byte_2);
+    buffer.push(byte_3);
+
+    let mut i2 = i;
+
+    loop {
+        let (i, _) = be_u8(i2)?;
+        let (i, _) = be_u8(i)?;
+        let (i, byte_2) = be_u8(i)?;
+        let (i, byte_3) = be_u8(i)?;
+
+        i2 = i;
+
+        buffer.push(byte_2);
+        buffer.push(byte_3);
+
+        if buffer.len() >= 20 {
+            break;
+        }
+    }
+
+    Ok((i2, TrackEvent::Comment(buffer)))
+}
+
+pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
+    let (_, event_type) = be_u8(i)?;
+
+    let (i, track_event) = match event_type {
+        0x98 => take_track_exclusive_event(i)?,
+        0xF6 => take_comment_event(i)?,
+        // イベントの区切りで 0xF7 が見つかるのは不正
+        0xF7 => panic!("Invalid track event"),
+        _ => take_single_length_event(i)?,
     };
 
     Ok((i, track_event))
@@ -102,73 +183,6 @@ fn parse_track(i: &[u8]) -> IResult<&[u8], Track, Error<&[u8]>> {
 
         track_events.push(event);
     }
-
-    enum BufferType {
-        Comment,
-        TrackExclusive,
-    }
-    let mut buffer_type: Option<BufferType> = None;
-    let mut step_time: Option<u8> = None;
-    let mut buffer: Vec<u8> = vec![];
-
-    // CommentStart または TrackExclusiveStart が見つかったら、バッファにそれ以降の ContinuesData を貯めて、
-    // 1つの Comment または TrackExclusive にマージする
-    track_events =
-        track_events
-            .into_iter()
-            .fold(vec![], |mut acc, track_event| match track_event {
-                TrackEvent::CommentStart(byte_0, byte_1) => {
-                    buffer_type = Some(BufferType::Comment);
-                    buffer.clear();
-
-                    buffer.push(byte_0);
-                    buffer.push(byte_1);
-                    acc
-                }
-                TrackEvent::TrackExclusiveStart(byte_0, byte_1, byte_2) => {
-                    buffer_type = Some(BufferType::TrackExclusive);
-                    buffer.clear();
-
-                    step_time = Some(byte_0);
-                    buffer.push(byte_1);
-                    buffer.push(byte_2);
-                    acc
-                }
-                TrackEvent::ContinuesData(byte_0, byte_1) => {
-                    buffer.push(byte_0);
-                    buffer.push(byte_1);
-                    acc
-                }
-                _ => {
-                    match buffer_type {
-                        Some(BufferType::Comment) => {
-                            acc.push(TrackEvent::Comment(buffer.clone()));
-                        }
-                        Some(BufferType::TrackExclusive) => {
-                            // 末尾に複数個ある 0xF7 を取り除く
-                            // TODO: 末尾に 0xF8 がある場合もあるらしいので対応する
-                            let position = buffer.iter().rposition(|&x| x != 0xF7);
-                            let position = match position {
-                                Some(position) => position,
-                                None => return acc,
-                            };
-                            buffer.truncate(position + 1);
-
-                            let step_time = step_time.take();
-
-                            acc.push(TrackEvent::TrackExclusive(
-                                step_time.unwrap(),
-                                buffer.clone(),
-                            ));
-                        }
-                        None => {
-                            acc.push(track_event);
-                        }
-                    }
-                    buffer_type = None;
-                    acc
-                }
-            });
 
     Ok((
         i,
