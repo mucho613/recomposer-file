@@ -2,7 +2,7 @@ use std::vec;
 
 use nom::{bytes::complete::take, error::Error, number::complete::be_u8, IResult};
 
-use super::TrackEvent;
+use super::types::TrackEvent;
 
 fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
     let (i, event_type) = be_u8(i)?;
@@ -20,6 +20,8 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
 
         0x90..=0x97 => TrackEvent::UserExclusive {
             step_time: byte_0,
+            template_gt: byte_1,
+            template_ve: byte_2,
             number: event_type & 0x0F,
         },
 
@@ -97,41 +99,35 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
 }
 
 fn take_track_exclusive_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
-    let (i, event_type) = be_u8(i)?;
-    let (i, step_time) = be_u8(i)?;
-    let (i, byte_2) = be_u8(i)?;
-    let (i, byte_3) = be_u8(i)?;
-    if event_type != 0x98 {
-        panic!("Not track exclusive event");
-    }
-
     let mut buffer = vec![];
-
-    buffer.push(byte_2);
-    buffer.push(byte_3);
-
-    let mut i2 = i;
-
+    let mut i_in_loop = i;
     loop {
-        let (i, _) = be_u8(i2)?;
-        let (i, _) = be_u8(i)?;
-        let (i, byte_2) = be_u8(i)?;
-        let (i, byte_3) = be_u8(i)?;
+        let (i, bytes) = take(4usize)(i_in_loop)?;
+        i_in_loop = i;
 
-        i2 = i;
-
-        buffer.push(byte_2);
-        buffer.push(byte_3);
-
-        if byte_3 == 0xF7 {
+        if bytes[2] == 0xF7 {
             break;
+        } else {
+            buffer.push(bytes[2]);
+        }
+
+        if bytes[3] == 0xF7 {
+            break;
+        } else {
+            buffer.push(bytes[3]);
         }
     }
 
+    let step_time = buffer[1];
+    let template_gt = buffer[2];
+    let template_ve = buffer[3];
+
     Ok((
-        i2,
+        i_in_loop,
         TrackEvent::TrackExclusive {
             step_time,
+            template_gt,
+            template_ve,
             message_body: buffer,
         },
     ))

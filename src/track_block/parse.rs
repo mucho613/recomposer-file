@@ -7,7 +7,7 @@ use nom::{
     IResult,
 };
 
-use crate::event::TrackEvent;
+use crate::event::{parse::parse_track_event, types::TrackEvent};
 
 use super::types::{Track, TrackBlock, TrackHeader, TrackType};
 

@@ -1,4 +1,4 @@
-use crate::event::TrackEvent;
+use crate::event::types::TrackEvent;
 
 #[derive(Debug)]
 pub struct TrackBlock {
