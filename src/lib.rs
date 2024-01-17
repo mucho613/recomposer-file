@@ -1,6 +1,7 @@
 use header_block::types::HeaderBlock;
 use track_block::types::TrackBlock;
 
+mod event;
 pub mod header_block;
 pub mod track_block;
 

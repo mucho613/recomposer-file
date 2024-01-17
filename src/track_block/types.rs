@@ -1,3 +1,5 @@
+use crate::event::TrackEvent;
+
 #[derive(Debug)]
 pub struct TrackBlock {
     pub tracks: Vec<Track>,
@@ -26,38 +28,3 @@ pub struct TrackHeader {
     pub muting: bool,
     pub comment: [u8; 36],
 }
-
-#[derive(Debug)]
-pub enum TrackEvent {
-    Note(KeyNumber, StepTime, GateTime, Velocity),
-    UserExclusive(StepTime, u8),
-    TrackExclusive(StepTime, Vec<u8>),
-    RolBase(StepTime, GateTime, Velocity),
-    RolPara(StepTime, GateTime, Velocity),
-    RolDev(StepTime, GateTime, Velocity),
-    BankPrg(StepTime, GateTime, Velocity),
-    Keyin(StepTime, GateTime, Velocity),
-    MidiChannel(StepTime, GateTime),
-    Tempo(StepTime, GateTime, Velocity),
-    AfterTouch(StepTime, Pressure),
-    Control(StepTime, u8, u8),
-    ProgramChange(StepTime, u8),
-    PolyphonicAfterTouch(StepTime, KeyNumber, Pressure),
-    PitchBend(StepTime, i16),
-    Key(u8),
-    Comment(Vec<u8>),
-    ContinuesData(u8, u8),
-    RepeatEnd(RepeatCount),
-    RepeatStart,
-    SameMeasure,
-    BarLine,
-    EndOfTrack,
-}
-
-type StepTime = u8;
-type GateTime = u8;
-type Velocity = u8;
-type KeyNumber = u8;
-type Pressure = u8;
-
-type RepeatCount = u8;
