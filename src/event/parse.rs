@@ -2,7 +2,10 @@ use std::vec;
 
 use nom::{bytes::complete::take, error::Error, number::complete::be_u8, IResult};
 
-use super::types::TrackEvent;
+use super::{
+    comment_event::take_comment_event, exclusive_event::take_track_exclusive_event,
+    types::TrackEvent,
+};
 
 fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
     let (i, event_type) = be_u8(i)?;
@@ -96,57 +99,6 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
     };
 
     Ok((i, track_event))
-}
-
-fn take_track_exclusive_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
-    let mut buffer = vec![];
-    let mut i_in_loop = i;
-    loop {
-        let (i, bytes) = take(4usize)(i_in_loop)?;
-        i_in_loop = i;
-
-        if bytes[2] == 0xF7 {
-            break;
-        } else {
-            buffer.push(bytes[2]);
-        }
-
-        if bytes[3] == 0xF7 {
-            break;
-        } else {
-            buffer.push(bytes[3]);
-        }
-    }
-
-    let step_time = buffer[1];
-    let template_gt = buffer[2];
-    let template_ve = buffer[3];
-
-    Ok((
-        i_in_loop,
-        TrackEvent::TrackExclusive {
-            step_time,
-            template_gt,
-            template_ve,
-            message_body: buffer,
-        },
-    ))
-}
-
-fn take_comment_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
-    let (i, bytes) = take(40usize)(i)?;
-
-    // 40 bytes のうち、4 bytes ごとの 3, 4 byte 目だけを取り出して結合する
-    let mut buffer = vec![];
-    for i in (0..40).step_by(4) {
-        buffer.push(bytes[i + 2]);
-        buffer.push(bytes[i + 3]);
-    }
-
-    let mut text = [0u8; 20];
-    text.copy_from_slice(&buffer[0..20]);
-
-    Ok((i, TrackEvent::Comment { text }))
 }
 
 pub fn parse_track_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>> {
