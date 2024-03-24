@@ -33,15 +33,15 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
             gate_time: byte_1,
             velocity: byte_2,
         },
-        0xDE => TrackEvent::RolandParameter {
+        0xDE => TrackEvent::RolandAddressParameter {
             step_time: byte_0,
-            gate_time: byte_1,
-            velocity: byte_2,
+            address: byte_1,
+            description: byte_2,
         },
-        0xDF => TrackEvent::RolandDeviceNumber {
+        0xDF => TrackEvent::RolandDeviceNumberAndModelId {
             step_time: byte_0,
-            gate_time: byte_1,
-            velocity: byte_2,
+            device_number: byte_1,
+            model_id: byte_2,
         },
 
         0xE2 => TrackEvent::BankPrg {
@@ -92,7 +92,7 @@ fn take_single_length_event(i: &[u8]) -> IResult<&[u8], TrackEvent, Error<&[u8]>
             measure: byte_0,
             track_offset: (byte_2 as u16) << 7 | byte_1 as u16,
         },
-        0xFD => TrackEvent::BarLine,
+        0xFD => TrackEvent::MeasureEnd,
         0xFE => TrackEvent::EndOfTrack,
 
         _ => panic!("Unknown track event type"),

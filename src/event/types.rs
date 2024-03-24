@@ -23,15 +23,15 @@ pub enum TrackEvent {
         gate_time: u8,
         velocity: u8,
     },
-    RolandDeviceNumber {
+    RolandDeviceNumberAndModelId {
         step_time: u8,
-        gate_time: u8,
-        velocity: u8,
+        device_number: u8,
+        model_id: u8,
     },
-    RolandParameter {
+    RolandAddressParameter {
         step_time: u8,
-        gate_time: u8,
-        velocity: u8,
+        address: u8,
+        description: u8,
     },
     BankPrg {
         step_time: u8,
@@ -87,6 +87,6 @@ pub enum TrackEvent {
         measure: u8,
         track_offset: u16,
     },
-    BarLine,
+    MeasureEnd,
     EndOfTrack,
 }
